@@ -7,7 +7,7 @@
     <a href="#日本語">日本語</a>
   </p>
   <p>
-    <a href="https://yuandesu.github.io/terminal-practice/">🌐 Live Demo</a>
+    <a href="https://yuandesu.github.io/Mock-Terminal/">🌐 Live Demo</a>
   </p>
 </div>
 
@@ -58,7 +58,7 @@
 
 直接開啟 Live Demo 即可使用，無需安裝任何軟體：
 
-**[https://yuandesu.github.io/terminal-practice/](https://yuandesu.github.io/terminal-practice/)**
+**[https://yuandesu.github.io/Mock-Terminal/](https://yuandesu.github.io/Mock-Terminal/)**
 
 1. 輸入 `help` 查看所有可用指令
 2. 輸入 `ls` 查看目錄內容
@@ -112,7 +112,7 @@
 
 Open the live demo directly — no installation required:
 
-**[https://yuandesu.github.io/terminal-practice/](https://yuandesu.github.io/terminal-practice/)**
+**[https://yuandesu.github.io/Mock-Terminal/](https://yuandesu.github.io/Mock-Terminal/)**
 
 1. Type `help` to see all available commands
 2. Type `ls` to list directory contents
@@ -166,7 +166,7 @@ Open the live demo directly — no installation required:
 
 インストール不要。ライブデモをそのまま開くだけで使えます：
 
-**[https://yuandesu.github.io/terminal-practice/](https://yuandesu.github.io/terminal-practice/)**
+**[https://yuandesu.github.io/Mock-Terminal/](https://yuandesu.github.io/Mock-Terminal/)**
 
 1. `help` と入力して利用可能なコマンドを確認
 2. `ls` と入力してディレクトリ内容を表示
