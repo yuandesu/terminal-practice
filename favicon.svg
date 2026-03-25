@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Terminal window background -->
+  <rect width="64" height="64" rx="10" fill="#0d0d0d"/>
+  <!-- Title bar -->
+  <rect x="0" y="0" width="64" height="20" rx="10" fill="#1a1a2e"/>
+  <rect x="0" y="10" width="64" height="10" fill="#1a1a2e"/>
+  <!-- macOS dots -->
+  <circle cx="12" cy="11" r="3.5" fill="#ff5f57"/>
+  <circle cx="22" cy="11" r="3.5" fill="#ffbd2e"/>
+  <circle cx="32" cy="11" r="3.5" fill="#28c840"/>
+  <!-- Separator -->
+  <line x1="0" y1="20" x2="64" y2="20" stroke="#222" stroke-width="1"/>
+  <!-- > prompt arrow -->
+  <text x="7" y="44" font-family="monospace,Courier New" font-size="18" fill="#00ff41" font-weight="700">&gt;_</text>
+</svg>
