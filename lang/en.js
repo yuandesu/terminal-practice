@@ -124,7 +124,7 @@ const LANG_EN = {
       viCursorUp:   'Move cursor up one line',
       viCursorDown: 'Move cursor down one line',
       viEsc:        'Back to Normal mode',
-      viUndo:       'Undo (not implemented)',
+      viUndo:       'Undo last change',
       viCmdW:       'Save file',
       viCmdWq:      'Save and quit',
       viCmdQ:       'Quit (no changes)',

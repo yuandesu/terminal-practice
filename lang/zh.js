@@ -124,7 +124,7 @@ const LANG_ZH = {
       viCursorUp:   '游標上移一行',
       viCursorDown: '游標下移一行',
       viEsc:        '回到 Normal 模式',
-      viUndo:       '復原（未實作）',
+      viUndo:       '復原上一步',
       viCmdW:       '存檔',
       viCmdWq:      '存檔並離開',
       viCmdQ:       '離開（無修改時）',

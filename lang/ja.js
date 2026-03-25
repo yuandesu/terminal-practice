@@ -124,7 +124,7 @@ const LANG_JA = {
       viCursorUp:   '↑ 1行上へ移動',
       viCursorDown: '↓ 1行下へ移動',
       viEsc:        'ノーマルモードに戻る',
-      viUndo:       'アンドゥ（未実装）',
+      viUndo:       'アンドゥ（直前の変更を元に戻す）',
       viCmdW:       '保存',
       viCmdWq:      '保存して終了',
       viCmdQ:       '終了（変更なしの場合）',

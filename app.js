@@ -533,12 +533,18 @@ function doVi(args) {
     if (FS[par] && !FS[par].children.includes(nm)) FS[par].children.push(nm);
   }
   if (FS[p].type === 'dir') { addOutLine(`vi: ${file}: is a directory`, 'error-line'); return; }
-  viState = { path: p, filename: file, lines: FS[p].content.split('\n'), cursorRow: 0, cursorCol: 0, mode: 'normal', commandBuf: '', message: `"${file}" ${FS[p].content.split('\n').length}L, ${FS[p].content.length}C`, modified: false, pendingOp: null };
+  viState = { path: p, filename: file, lines: FS[p].content.split('\n'), cursorRow: 0, cursorCol: 0, mode: 'normal', commandBuf: '', message: `"${file}" ${FS[p].content.split('\n').length}L, ${FS[p].content.length}C`, modified: false, pendingOp: null, history: [], insertSnapshot: null, insertDirty: false };
   mode = 'vi-normal';
   document.getElementById('modeBadge').textContent = 'VIM - NORMAL';
   document.getElementById('modeBadge').style.color = '#ff6b6b';
   showHint('info', T().viEnterHint, T().viEnterText);
   refresh();
+}
+
+function viPushHistory() {
+  const v = viState;
+  v.history.push({ lines: [...v.lines], cursorRow: v.cursorRow, cursorCol: v.cursorCol });
+  if (v.history.length > 100) v.history.shift();
 }
 
 function viHandleKey(key) {
@@ -550,6 +556,11 @@ function viHandleKey(key) {
     else if (key.length === 1)    v.commandBuf += key;
   } else if (v.mode === 'insert') {
     if (key === 'Escape') {
+      if (v.insertDirty && v.insertSnapshot) {
+        v.history.push(v.insertSnapshot);
+        if (v.history.length > 100) v.history.shift();
+      }
+      v.insertSnapshot = null; v.insertDirty = false;
       v.mode = 'normal'; v.cursorCol = Math.max(0, v.cursorCol - 1);
       document.getElementById('modeBadge').textContent = 'VIM - NORMAL';
       showHint('explain', T().viEscHint, T().viEscText);
@@ -557,17 +568,17 @@ function viHandleKey(key) {
       const l = v.lines[v.cursorRow];
       v.lines[v.cursorRow] = l.substring(0, v.cursorCol);
       v.lines.splice(v.cursorRow + 1, 0, l.substring(v.cursorCol));
-      v.cursorRow++; v.cursorCol = 0; v.modified = true;
+      v.cursorRow++; v.cursorCol = 0; v.modified = true; v.insertDirty = true;
     } else if (key === 'Backspace') {
       if (v.cursorCol > 0) {
         const l = v.lines[v.cursorRow];
         v.lines[v.cursorRow] = l.substring(0, v.cursorCol - 1) + l.substring(v.cursorCol);
-        v.cursorCol--; v.modified = true;
+        v.cursorCol--; v.modified = true; v.insertDirty = true;
       } else if (v.cursorRow > 0) {
         v.cursorCol = v.lines[v.cursorRow - 1].length;
         v.lines[v.cursorRow - 1] += v.lines[v.cursorRow];
         v.lines.splice(v.cursorRow, 1);
-        v.cursorRow--; v.modified = true;
+        v.cursorRow--; v.modified = true; v.insertDirty = true;
       }
     } else if (key === 'ArrowLeft')  { v.cursorCol = Math.max(0, v.cursorCol - 1); }
     else if (key === 'ArrowRight') { v.cursorCol = Math.min(v.lines[v.cursorRow].length, v.cursorCol + 1); }
@@ -576,20 +587,20 @@ function viHandleKey(key) {
     else if (key === 'Tab') {
       const l = v.lines[v.cursorRow];
       v.lines[v.cursorRow] = l.substring(0, v.cursorCol) + '  ' + l.substring(v.cursorCol);
-      v.cursorCol += 2; v.modified = true;
+      v.cursorCol += 2; v.modified = true; v.insertDirty = true;
     } else if (key.length === 1) {
       const l = v.lines[v.cursorRow];
       v.lines[v.cursorRow] = l.substring(0, v.cursorCol) + key + l.substring(v.cursorCol);
-      v.cursorCol++; v.modified = true;
+      v.cursorCol++; v.modified = true; v.insertDirty = true;
     }
   } else {
     const viExpl = T().viExpl;
     switch (key) {
-      case 'i': v.mode='insert'; document.getElementById('modeBadge').textContent='VIM - INSERT'; break;
-      case 'a': v.mode='insert'; v.cursorCol=Math.min(v.cursorCol+1,v.lines[v.cursorRow].length); document.getElementById('modeBadge').textContent='VIM - INSERT'; break;
-      case 'A': v.mode='insert'; v.cursorCol=v.lines[v.cursorRow].length; document.getElementById('modeBadge').textContent='VIM - INSERT'; break;
-      case 'o': v.lines.splice(v.cursorRow+1,0,''); v.cursorRow++; v.cursorCol=0; v.mode='insert'; document.getElementById('modeBadge').textContent='VIM - INSERT'; v.modified=true; break;
-      case 'O': v.lines.splice(v.cursorRow,0,''); v.cursorCol=0; v.mode='insert'; document.getElementById('modeBadge').textContent='VIM - INSERT'; v.modified=true; break;
+      case 'i': v.insertSnapshot={lines:[...v.lines],cursorRow:v.cursorRow,cursorCol:v.cursorCol}; v.insertDirty=false; v.mode='insert'; document.getElementById('modeBadge').textContent='VIM - INSERT'; break;
+      case 'a': v.insertSnapshot={lines:[...v.lines],cursorRow:v.cursorRow,cursorCol:v.cursorCol}; v.insertDirty=false; v.mode='insert'; v.cursorCol=Math.min(v.cursorCol+1,v.lines[v.cursorRow].length); document.getElementById('modeBadge').textContent='VIM - INSERT'; break;
+      case 'A': v.insertSnapshot={lines:[...v.lines],cursorRow:v.cursorRow,cursorCol:v.cursorCol}; v.insertDirty=false; v.mode='insert'; v.cursorCol=v.lines[v.cursorRow].length; document.getElementById('modeBadge').textContent='VIM - INSERT'; break;
+      case 'o': v.insertSnapshot={lines:[...v.lines],cursorRow:v.cursorRow,cursorCol:v.cursorCol}; v.insertDirty=true; v.lines.splice(v.cursorRow+1,0,''); v.cursorRow++; v.cursorCol=0; v.mode='insert'; document.getElementById('modeBadge').textContent='VIM - INSERT'; v.modified=true; break;
+      case 'O': v.insertSnapshot={lines:[...v.lines],cursorRow:v.cursorRow,cursorCol:v.cursorCol}; v.insertDirty=true; v.lines.splice(v.cursorRow,0,''); v.cursorCol=0; v.mode='insert'; document.getElementById('modeBadge').textContent='VIM - INSERT'; v.modified=true; break;
       case 'h': case 'ArrowLeft':  v.cursorCol=Math.max(0,v.cursorCol-1); break;
       case 'l': case 'ArrowRight': v.cursorCol=Math.min(Math.max(0,v.lines[v.cursorRow].length-1),v.cursorCol+1); break;
       case 'j': case 'ArrowDown':  if(v.cursorRow<v.lines.length-1){v.cursorRow++;v.cursorCol=Math.min(v.cursorCol,Math.max(0,v.lines[v.cursorRow].length-1));} break;
@@ -598,9 +609,17 @@ function viHandleKey(key) {
       case '$': v.cursorCol=Math.max(0,v.lines[v.cursorRow].length-1); break;
       case 'g': v.cursorRow=0; v.cursorCol=0; break;
       case 'G': v.cursorRow=v.lines.length-1; v.cursorCol=0; break;
-      case 'x': if(v.lines[v.cursorRow].length>0){v.lines[v.cursorRow]=v.lines[v.cursorRow].substring(0,v.cursorCol)+v.lines[v.cursorRow].substring(v.cursorCol+1);v.cursorCol=Math.min(v.cursorCol,Math.max(0,v.lines[v.cursorRow].length-1));v.modified=true;} break;
+      case 'x':
+        if (v.lines[v.cursorRow].length > 0) {
+          viPushHistory();
+          v.lines[v.cursorRow] = v.lines[v.cursorRow].substring(0,v.cursorCol) + v.lines[v.cursorRow].substring(v.cursorCol+1);
+          v.cursorCol = Math.min(v.cursorCol, Math.max(0, v.lines[v.cursorRow].length-1));
+          v.modified = true;
+        }
+        break;
       case 'd':
         if (v.pendingOp === 'd') {
+          viPushHistory();
           if (v.lines.length > 1) { v.lines.splice(v.cursorRow, 1); v.cursorRow = Math.min(v.cursorRow, v.lines.length - 1); }
           else v.lines[0] = '';
           v.cursorCol = 0; v.modified = true; v.message = '1 line deleted'; v.pendingOp = null;
@@ -608,7 +627,18 @@ function viHandleKey(key) {
           v.pendingOp = 'd'; v.message = 'd';
         }
         break;
-      case 'u': v.message='Already at oldest change'; break;
+      case 'u':
+        if (v.history.length === 0) {
+          v.message = 'Already at oldest change';
+        } else {
+          const snap = v.history.pop();
+          v.lines = [...snap.lines];
+          v.cursorRow = snap.cursorRow;
+          v.cursorCol = snap.cursorCol;
+          v.modified = true;
+          v.message = '1 change';
+        }
+        break;
       case ':': v.mode='command'; v.commandBuf=''; v.pendingOp=null; break;
       case 'Escape': v.message=''; v.pendingOp=null; break;
     }
