@@ -29,15 +29,16 @@
       <div id="terminal"></div>
       <div class="hint-container" id="hintContainer"></div>
     </div>
-    <!-- Tips panel: flex item between terminal and keyboard, no overlap -->
-    <div class="tips-panel" id="tipsPanel">
-      <div class="tips-header">
-        <span class="tips-title" id="tipsPanelTitle"></span>
-        <button class="tips-close" onclick="toggleTips()">×</button>
+    <div class="keyboard-section" id="keyboard">
+      <!-- Tips panel: absolutely covers the keyboard area only -->
+      <div class="tips-panel" id="tipsPanel">
+        <div class="tips-header">
+          <span class="tips-title" id="tipsPanelTitle"></span>
+          <button class="tips-close" onclick="toggleTips()">×</button>
+        </div>
+        <div class="tips-body" id="tipsBody"></div>
       </div>
-      <div class="tips-body" id="tipsBody"></div>
     </div>
-    <div class="keyboard-section" id="keyboard"></div>
   </div>
 
   <!-- Tips button: fixed, always visible -->
