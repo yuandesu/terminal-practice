@@ -461,7 +461,7 @@ function doCat(args) {
   const p = resolvePath(args[0]), node = FS[p];
   if (!node)              { addOutLine(`cat: ${args[0]}: No such file or directory`, 'error-line'); return; }
   if (node.type === 'dir') { addOutLine(`cat: ${args[0]}: Is a directory`, 'error-line'); return; }
-  node.content.split('\n').forEach(l => addOutLine(l));
+  (node.content || '').split('\n').forEach(l => addOutLine(l));
 }
 function doHead(args) {
   let n = 10, file = null;
@@ -472,7 +472,7 @@ function doHead(args) {
   if (!file) { addOutLine('usage: head [-n N] <file>', 'error-line'); return; }
   const p = resolvePath(file), node = FS[p];
   if (!node || node.type === 'dir') { addOutLine(`head: ${file}: No such file or directory`, 'error-line'); return; }
-  node.content.split('\n').slice(0, n).forEach(l => addOutLine(l));
+  (node.content || '').split('\n').slice(0, n).forEach(l => addOutLine(l));
 }
 function doTail(args) {
   let n = 10, file = null;
@@ -483,7 +483,7 @@ function doTail(args) {
   if (!file) { addOutLine('usage: tail [-n N] <file>', 'error-line'); return; }
   const p = resolvePath(file), node = FS[p];
   if (!node || node.type === 'dir') { addOutLine(`tail: ${file}: No such file or directory`, 'error-line'); return; }
-  node.content.split('\n').slice(-n).forEach(l => addOutLine(l));
+  (node.content || '').split('\n').slice(-n).forEach(l => addOutLine(l));
 }
 function doWc(args) {
   let countLines = false, file = null;
