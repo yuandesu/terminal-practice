@@ -5,6 +5,29 @@ Format: `[version] YYYY-MM-DD — description`
 
 ---
 
+## [1.5.0] 2026-03-26 — Training Tool Upgrade
+
+### Added
+- **Pipe support** — single and multi-stage pipes (`ls | grep yaml`, `cat file | wc -l`, `cat file | grep err | wc -l`)
+- **Redirect support** — overwrite (`ls > out.txt`) and append (`echo hello >> notes.txt`)
+- **Theme-based Task Mode** — 5 topic-grouped themes replacing the previous linear 10-task list:
+  - 📁 File Navigation (5 tasks): ls, pwd, ls -la, cd, find
+  - 📄 File Content (4 tasks): cat, head, tail, wc
+  - ⚙️ File Operations (5 tasks): mkdir, touch, cp, mv, rm
+  - 🔍 Search & Filter (3 tasks): grep, ls|grep, cat|wc
+  - ✏️ Vim Editing (3 tasks): open+quit, insert+save, dd+save
+- **Theme selector** — card grid UI to pick a theme; completed themes show a ✓ badge
+- **Progress persistence** — filesystem state, command history, and task progress saved to `localStorage`; survives page refresh
+- **`reset` command** — type `reset` in the terminal to clear all saved progress
+- **↺ Reset button** — in the task panel footer for quick reset
+
+### Changed
+- `tasks.js` replaced by `task-themes.js` with richer per-theme structure
+- `doGrep` and `doWc` now accept piped stdin (no file arg required when used in pipeline)
+- Task completion now resets `taskFlags` on each advance to prevent stale flag bleed-through
+
+---
+
 ## [1.4.0] 2026-03-26 — Task Mode
 
 ### Added

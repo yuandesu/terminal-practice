@@ -24,11 +24,16 @@ let isLightMode   = false;
 
 // ── Task Mode State ─────────────────────
 let taskMode         = false;
+let taskTheme        = null;   // active theme object (null = selector visible)
 let taskIdx          = 0;
 let taskPanelOpen    = false;
 let taskHintShown    = false;
 let taskFlags        = {};
 let taskAdvanceTimer = null;
+let completedThemes  = [];     // IDs of completed themes (persisted)
+
+// ── Pipe / Redirect State ───────────────
+let captureBuf       = null;   // string[] while capturing stdout, null otherwise
 
 function T() { return TRANSLATIONS[currentLang]; }
 let cmdExplain  = T().cmdExplain;
@@ -224,7 +229,49 @@ function switchLang(lang) {
   addHtmlLine(`<span class="output-line" style="color:#888">${T().separator}</span>`);
   refresh();
   showHint('hint', T().langTitle, T().langText);
-  if (taskMode) renderTaskPanel();
+  if (taskMode) { if (taskTheme) renderTaskPanel(); else showThemeSelector(); }
+}
+
+// ── Progress Persistence ────────────────
+const SAVE_KEY = 'MT_v2';
+
+function saveProgress() {
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify({
+      version: '2',
+      fs: FS,
+      cwd,
+      cmdHistory,
+      taskThemeId:      taskTheme ? taskTheme.id : null,
+      taskIdx,
+      completedThemes,
+    }));
+  } catch(e) {}
+}
+
+function loadProgress() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return;
+    const d = JSON.parse(raw);
+    if (d.version !== '2') { localStorage.removeItem(SAVE_KEY); return; }
+    if (d.fs)           Object.keys(d.fs).forEach(k => { FS[k] = d.fs[k]; });
+    if (d.cwd)          cwd = d.cwd;
+    if (d.cmdHistory)   { cmdHistory = d.cmdHistory; histIdx = cmdHistory.length; }
+    if (d.completedThemes) completedThemes = d.completedThemes;
+    if (d.taskThemeId) {
+      const theme = TASK_THEMES.find(t => t.id === d.taskThemeId);
+      if (theme) {
+        taskTheme = theme;
+        taskIdx   = d.taskIdx || 0;
+      }
+    }
+  } catch(e) { localStorage.removeItem(SAVE_KEY); }
+}
+
+function resetProgress() {
+  localStorage.removeItem(SAVE_KEY);
+  location.reload();
 }
 
 // ── Explanation lookup ─────────────────
@@ -308,8 +355,15 @@ function refresh() {
 }
 
 function addPromptLine(cmd) { termLines.push(`<div class="prompt-line">${getPrompt()}<span class="output-line">${escHtml(cmd)}</span></div>`); }
-function addOutLine(text, cls = 'output-line') { termLines.push(`<div class="${cls}">${escHtml(text)}</div>`); }
-function addHtmlLine(html) { termLines.push(`<div>${html}</div>`); }
+function addOutLine(text, cls = 'output-line') {
+  if (captureBuf !== null) { captureBuf.push(text); return; }
+  termLines.push(`<div class="${cls}">${escHtml(text)}</div>`);
+}
+function addHtmlLine(html) {
+  if (captureBuf !== null) { captureBuf.push(stripHtml(html)); return; }
+  termLines.push(`<div>${html}</div>`);
+}
+function stripHtml(html) { return html.replace(/<[^>]+>/g, ''); }
 
 // ── Path resolution ────────────────────
 function resolvePath(p) {
@@ -365,17 +419,58 @@ function doTabComplete() {
 }
 
 // ── Command execution ──────────────────
-function execCmd(raw) {
-  const cmd = raw.trim();
-  if (!cmd) { addPromptLine(''); refresh(); return; }
-  addPromptLine(cmd);
-  cmdHistory.push(cmd);
-  histIdx = cmdHistory.length;
+// ── Pipeline helpers ────────────────────
+function hasPipeOrRedirect(cmd) { return /[|>]/.test(cmd); }
 
+function runPipeline(raw) {
+  // Separate redirect suffix (check >> before >)
+  let pipeStr = raw, redirectFile = null, appendMode = false;
+  const appendIdx = raw.lastIndexOf('>>');
+  const overwriteIdx = raw.lastIndexOf('>');
+  if (appendIdx !== -1) {
+    pipeStr = raw.slice(0, appendIdx).trimEnd();
+    redirectFile = raw.slice(appendIdx + 2).trim();
+    appendMode = true;
+  } else if (overwriteIdx !== -1) {
+    pipeStr = raw.slice(0, overwriteIdx).trimEnd();
+    redirectFile = raw.slice(overwriteIdx + 1).trim();
+    appendMode = false;
+  }
+
+  const stages = pipeStr.split('|').map(s => s.trim()).filter(Boolean);
+  let stdin = null;
+
+  for (let i = 0; i < stages.length; i++) {
+    const isLastToTerminal = i === stages.length - 1 && !redirectFile;
+    if (!isLastToTerminal) {
+      captureBuf = [];
+      execCmdCore(stages[i], stdin);
+      stdin = [...captureBuf];
+      captureBuf = null;
+    } else {
+      execCmdCore(stages[i], stdin);
+    }
+  }
+
+  if (redirectFile) {
+    const content = (stdin || []).join('\n');
+    const p = resolvePath(redirectFile);
+    if (appendMode && FS[p]?.type === 'file') {
+      FS[p].content += (FS[p].content ? '\n' : '') + content;
+    } else {
+      const parent = p.substring(0, p.lastIndexOf('/')) || '/';
+      const name = p.split('/').pop();
+      FS[p] = { type: 'file', content };
+      if (FS[parent] && !FS[parent].children.includes(name)) FS[parent].children.push(name);
+    }
+  }
+}
+
+// Core command dispatcher — returns isError, accepts optional stdin lines for pipe
+function execCmdCore(cmd, stdin) {
   const parts = cmd.split(/\s+/);
   const c = parts[0], args = parts.slice(1);
   let isError = false;
-
   try {
     switch (c) {
       case 'ls':    doLs(args);   break;
@@ -384,14 +479,14 @@ function execCmd(raw) {
       case 'cat':   doCat(args);  break;
       case 'head':  doHead(args); break;
       case 'tail':  doTail(args); break;
-      case 'wc':    doWc(args);   break;
+      case 'wc':    doWc(args, stdin);   break;
       case 'echo':  addOutLine(args.join(' ').replace(/^["']|["']$/g, '')); break;
       case 'mkdir': doMkdir(args); break;
       case 'touch': doTouch(args); break;
       case 'rm':    doRm(args);   break;
       case 'cp':    doCp(args);   break;
       case 'mv':    doMv(args);   break;
-      case 'grep':  doGrep(args); break;
+      case 'grep':  doGrep(args, stdin); break;
       case 'find':  doFind(args); break;
       case 'clear': termLines = []; break;
       case 'vi': case 'vim': doVi(args); break;
@@ -399,15 +494,32 @@ function execCmd(raw) {
       case 'date':  addOutLine(new Date().toLocaleString('zh-TW')); break;
       case 'which': doWhich(args); break;
       case 'help':  doHelp(); break;
+      case 'reset': resetProgress(); break;
       default: addOutLine(`zsh: command not found: ${c}`, 'error-line'); isError = true;
     }
   } catch (e) { addOutLine(e.message, 'error-line'); isError = true; }
+  return isError;
+}
 
-  if (!isError && !taskMode) {
-    const explain = getExplanation(cmd);
-    if (explain) setTimeout(() => showHint('explain', `📖 ${explain.title}`, explain.text), 100);
+function execCmd(raw) {
+  const cmd = raw.trim();
+  if (!cmd) { addPromptLine(''); refresh(); return; }
+  addPromptLine(cmd);
+  cmdHistory.push(cmd);
+  histIdx = cmdHistory.length;
+
+  let isError = false;
+  if (hasPipeOrRedirect(cmd)) {
+    runPipeline(cmd);
+  } else {
+    isError = execCmdCore(cmd, null);
+    if (!isError && !taskMode) {
+      const explain = getExplanation(cmd);
+      if (explain) setTimeout(() => showHint('explain', `📖 ${explain.title}`, explain.text), 100);
+    }
   }
   if (taskMode) checkTaskCompletion(cmd);
+  saveProgress();
   refresh();
 }
 
@@ -496,15 +608,22 @@ function doTail(args) {
   if (!node || node.type === 'dir') { addOutLine(`tail: ${file}: No such file or directory`, 'error-line'); return; }
   (node.content || '').split('\n').slice(-n).forEach(l => addOutLine(l));
 }
-function doWc(args) {
+function doWc(args, stdin = null) {
   let countLines = false, file = null;
   for (const a of args) { if (a === '-l') countLines = true; else file = a; }
-  if (!file) { addOutLine('usage: wc [-l] <file>', 'error-line'); return; }
-  const p = resolvePath(file), node = FS[p];
-  if (!node || node.type === 'dir') { addOutLine(`wc: ${file}: No such file or directory`, 'error-line'); return; }
-  const lines = node.content.split('\n');
-  if (countLines) addOutLine(`       ${lines.length} ${file}`);
-  else { const words = node.content.split(/\s+/).filter(Boolean).length; addOutLine(`       ${lines.length}       ${words}      ${node.content.length} ${file}`); }
+  let lines, label;
+  if (file) {
+    const p = resolvePath(file), node = FS[p];
+    if (!node || node.type === 'dir') { addOutLine(`wc: ${file}: No such file or directory`, 'error-line'); return; }
+    lines = node.content.split('\n'); label = file;
+  } else if (stdin !== null) {
+    lines = stdin; label = '';
+  } else {
+    addOutLine('usage: wc [-l] <file>', 'error-line'); return;
+  }
+  const content = lines.join('\n');
+  if (countLines) addOutLine(`       ${lines.length}${label ? ' ' + label : ''}`);
+  else { const words = content.split(/\s+/).filter(Boolean).length; addOutLine(`       ${lines.length}       ${words}      ${content.length}${label ? ' ' + label : ''}`); }
 }
 function doMkdir(args) {
   if (!args.length) { addOutLine('usage: mkdir <dir>', 'error-line'); return; }
@@ -552,13 +671,21 @@ function doMv(args) {
   delete FS[src];
   if (FS[sparent]) FS[sparent].children = FS[sparent].children.filter(c => c !== sname);
 }
-function doGrep(args) {
-  if (args.length < 2) { addOutLine('usage: grep <pattern> <file>', 'error-line'); return; }
-  const [pat, file] = args;
-  const p = resolvePath(file), node = FS[p];
-  if (!node) { addOutLine(`grep: ${file}: No such file or directory`, 'error-line'); return; }
+function doGrep(args, stdin = null) {
+  if (args.length < 1) { addOutLine('usage: grep <pattern> [<file>]', 'error-line'); return; }
+  const pat = args[0];
+  let lines;
+  if (args.length >= 2) {
+    const p = resolvePath(args[1]), node = FS[p];
+    if (!node) { addOutLine(`grep: ${args[1]}: No such file or directory`, 'error-line'); return; }
+    lines = node.content.split('\n');
+  } else if (stdin !== null) {
+    lines = stdin;
+  } else {
+    addOutLine('usage: grep <pattern> [<file>]', 'error-line'); return;
+  }
   const re = new RegExp(pat, 'gi');
-  node.content.split('\n').forEach(l => {
+  lines.forEach(l => {
     if (re.test(l)) addHtmlLine(`<span class="output-line">${escHtml(l).replace(new RegExp(pat, 'gi'), m => `<span style="color:#ff6b6b;font-weight:bold">${m}</span>`)}</span>`);
   });
 }
@@ -727,7 +854,9 @@ function exitVi() {
   viState = null; mode = 'normal';
   document.getElementById('modeBadge').textContent = 'NORMAL';
   document.getElementById('modeBadge').style.color = '#aaa';
-  if (taskMode) checkTaskCompletion(':wq');
+  taskFlags.viExited = true;
+  if (taskMode) checkTaskCompletion('');
+  saveProgress();
   refresh();
 }
 
@@ -744,67 +873,132 @@ function showHint(type, title, text) {
 
 // ── Task Mode ──────────────────────────
 function toggleTaskMode() {
-  taskMode = !taskMode;
-  document.getElementById('taskModeBtn').classList.toggle('active', taskMode);
-  document.getElementById('taskBar').style.display = taskMode ? 'block' : 'none';
   if (taskMode) {
-    taskIdx = 0;
-    taskPanelOpen = true;
-    renderTaskPanel();
-    showHint('info', T().tasks.btnLabel, T().tasks.list[0].title);
-  } else {
     exitTaskMode();
+  } else {
+    taskMode = true;
+    document.getElementById('taskModeBtn').classList.add('active');
+    document.getElementById('taskBar').style.display = 'block';
+    if (taskTheme) {
+      taskPanelOpen = true;
+      renderTaskPanel();
+    } else {
+      taskPanelOpen = true;
+      showThemeSelector();
+    }
   }
 }
 
 function exitTaskMode() {
   taskMode = false;
+  taskTheme = null;
   if (taskAdvanceTimer) { clearTimeout(taskAdvanceTimer); taskAdvanceTimer = null; }
   taskPanelOpen = false;
   document.getElementById('taskModeBtn').classList.remove('active');
   document.getElementById('taskBar').style.display = 'none';
+  saveProgress();
 }
 
 function toggleTaskPanel() {
   taskPanelOpen = !taskPanelOpen;
+  if (taskTheme) renderTaskPanel(); else showThemeSelector();
+}
+
+function showThemeSelector() {
+  const th = T().themes;
+  const body = document.getElementById('taskBarBody');
+  document.getElementById('taskBarLabel').textContent = th.selectorTitle;
+  document.getElementById('taskBarTitle').textContent = '';
+  document.getElementById('taskBackBtn').style.display = 'none';
+  const cards = TASK_THEMES.map(theme => {
+    const info = th[theme.id];
+    const done = completedThemes.includes(theme.id);
+    return `<div class="theme-card${done ? ' done' : ''}" onclick="selectTheme('${theme.id}')">` +
+      `<span class="theme-card-icon">${theme.icon}</span>` +
+      `<span class="theme-card-name">${info.name}</span>` +
+      `<span class="theme-card-desc">${info.desc}</span>` +
+      `<span class="theme-card-meta">${theme.tasks.length} ${th.tasksLabel}${done ? ' · ✓' : ''}</span>` +
+      `</div>`;
+  }).join('');
+  body.innerHTML = `<div class="theme-selector"><div class="theme-grid">${cards}</div></div>`;
+  body.style.display = 'block';
+  document.getElementById('taskExpandBtn').classList.add('open');
+}
+
+function selectTheme(id) {
+  taskTheme = TASK_THEMES.find(t => t.id === id);
+  taskIdx = 0; taskHintShown = false; taskFlags = {};
+  taskPanelOpen = true;
+  document.getElementById('taskBackBtn').style.display = '';
   renderTaskPanel();
+  saveProgress();
+}
+
+function backToThemeSelector() {
+  if (taskAdvanceTimer) { clearTimeout(taskAdvanceTimer); taskAdvanceTimer = null; }
+  taskTheme = null; taskIdx = 0; taskFlags = {};
+  saveProgress();
+  showThemeSelector();
+}
+
+function markThemeComplete(id) {
+  if (!completedThemes.includes(id)) completedThemes.push(id);
+  saveProgress();
 }
 
 function renderTaskPanel() {
   const t = T().tasks;
-  const info = t.list[taskIdx];
-  const task = TASKS[taskIdx];
-  document.getElementById('taskBarLabel').textContent = `${t.panelTitle} ${taskIdx + 1}${t.of}${TASKS.length}`;
+  const th = T().themes;
+  const info = t.lists[taskTheme.id][taskIdx];
+  const task = taskTheme.tasks[taskIdx];
+  document.getElementById('taskBarLabel').textContent =
+    `${th[taskTheme.id].name}  ${taskIdx + 1}${t.of}${taskTheme.tasks.length}`;
   document.getElementById('taskBarTitle').textContent = info.title;
+  const body = document.getElementById('taskBarBody');
+  body.innerHTML =
+    `<div class="task-desc" id="taskDesc"></div>` +
+    `<div class="task-footer">` +
+      `<span class="task-nav-btn" onclick="toggleTaskHint(event)">💡 Hint</span>` +
+      `<span class="task-nav-btn" onclick="prevTask()">← Prev</span>` +
+      `<span class="task-nav-btn" onclick="skipTask(null)">Skip →</span>` +
+      `<span class="task-nav-btn reset-btn" onclick="resetProgress()">↺ Reset</span>` +
+    `</div>` +
+    `<div class="task-hint-line" id="taskHintLine" style="display:none"></div>`;
   document.getElementById('taskDesc').textContent = info.desc;
   const hintEl2 = document.getElementById('taskHintLine');
   hintEl2.textContent = task.hint;
   hintEl2.style.display = taskHintShown ? 'block' : 'none';
-  document.getElementById('taskBarBody').style.display = taskPanelOpen ? 'block' : 'none';
+  body.style.display = taskPanelOpen ? 'block' : 'none';
   document.getElementById('taskExpandBtn').classList.toggle('open', taskPanelOpen);
 }
 
 function toggleTaskHint(e) {
-  e.stopPropagation();
+  if (e) e.stopPropagation();
   taskHintShown = !taskHintShown;
-  document.getElementById('taskHintLine').style.display = taskHintShown ? 'block' : 'none';
+  const el = document.getElementById('taskHintLine');
+  if (el) el.style.display = taskHintShown ? 'block' : 'none';
 }
 
 function skipTask(e) {
   if (e) e.stopPropagation();
   if (taskAdvanceTimer) { clearTimeout(taskAdvanceTimer); taskAdvanceTimer = null; }
-  if (taskIdx < TASKS.length - 1) { taskIdx++; taskHintShown = false; renderTaskPanel(); }
-  else exitTaskMode();
+  if (taskTheme && taskIdx < taskTheme.tasks.length - 1) {
+    taskIdx++; taskHintShown = false; taskFlags = {}; renderTaskPanel();
+  } else {
+    backToThemeSelector();
+  }
+  saveProgress();
 }
 
 function prevTask() {
   if (taskAdvanceTimer) { clearTimeout(taskAdvanceTimer); taskAdvanceTimer = null; }
-  if (taskIdx > 0) { taskIdx--; taskHintShown = false; renderTaskPanel(); }
+  if (taskIdx > 0) { taskIdx--; taskHintShown = false; taskFlags = {}; renderTaskPanel(); }
+  saveProgress();
 }
 
 function checkTaskCompletion(raw) {
-  if (!taskMode || taskAdvanceTimer !== null) return;
-  const task = TASKS[taskIdx];
+  if (!taskMode || !taskTheme || taskAdvanceTimer !== null) return;
+  const task = taskTheme.tasks[taskIdx];
   if (!task) return;
 
   const c = task.check;
@@ -828,14 +1022,15 @@ function checkTaskCompletion(raw) {
   showHint('success', t.successTitle, t.successText.replace('{n}', taskIdx + 1));
   taskAdvanceTimer = setTimeout(() => {
     taskAdvanceTimer = null;
-    if (taskIdx < TASKS.length - 1) {
-      taskIdx++;
-      taskHintShown = false;
-      renderTaskPanel();
+    taskFlags = {};
+    if (taskIdx < taskTheme.tasks.length - 1) {
+      taskIdx++; taskHintShown = false; renderTaskPanel();
     } else {
+      markThemeComplete(taskTheme.id);
       showHint('success', t.allDoneTitle, t.allDoneText);
-      exitTaskMode();
+      setTimeout(() => backToThemeSelector(), 2000);
     }
+    saveProgress();
   }, 2500);
 }
 
@@ -1016,6 +1211,7 @@ function simulateKey(kid) {
 }
 
 // ── Init ───────────────────────────────
+loadProgress();
 buildKeyboard();
 addHtmlLine(`<span class="output-line" style="color:#888">${T().welcome1}</span>`);
 addHtmlLine(`<span class="output-line" style="color:#888">${T().welcome2}</span>`);

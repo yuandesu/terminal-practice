@@ -31,19 +31,11 @@
         <span class="task-bar-label" id="taskBarLabel"></span>
         <span class="task-bar-title" id="taskBarTitle"></span>
         <div class="task-bar-controls">
-          <span class="task-nav-btn" onclick="skipTask(event)">⏭</span>
+          <span class="task-nav-btn" id="taskBackBtn" onclick="backToThemeSelector(); event.stopPropagation();" style="display:none">← Themes</span>
           <span class="task-expand-btn" id="taskExpandBtn">▼</span>
         </div>
       </div>
-      <div class="task-bar-body" id="taskBarBody" style="display:none">
-        <div class="task-desc" id="taskDesc"></div>
-        <div class="task-footer">
-          <span class="task-nav-btn" onclick="toggleTaskHint(event)">💡 Hint</span>
-          <span class="task-nav-btn" onclick="prevTask()">← Prev</span>
-          <span class="task-nav-btn" onclick="skipTask(null)">Skip →</span>
-        </div>
-        <div class="task-hint-line" id="taskHintLine" style="display:none"></div>
-      </div>
+      <div class="task-bar-body" id="taskBarBody" style="display:none"></div>
     </div>
     <div class="terminal-wrap">
       <div id="terminal"></div>
@@ -69,7 +61,7 @@
   <script src="lang/zh.js"></script>
   <script src="lang/en.js"></script>
   <script src="lang/ja.js"></script>
-  <script src="tasks.js"></script>
+  <script src="task-themes.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

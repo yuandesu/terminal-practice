@@ -304,6 +304,31 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); font-family:
 }
 .task-footer { display: flex; gap: 8px; justify-content: flex-end; }
 
+/* Reset button (subtler) */
+.reset-btn { color: #555 !important; }
+.reset-btn:hover { color: #e06060 !important; border-color: #5a2020 !important; }
+.light-mode .reset-btn:hover { color: #c03030 !important; border-color: #e08080 !important; }
+
+/* Theme selector */
+.theme-selector { padding: 4px 0 6px; }
+.theme-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px;
+}
+.theme-card {
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 9px 11px; border-radius: 6px; cursor: pointer;
+  background: rgba(255,189,46,0.04); border: 1px solid #3a3410;
+  transition: all .15s;
+}
+.theme-card:hover { background: rgba(255,189,46,0.1); border-color: #ffbd2e; }
+.theme-card.done { border-color: #3a6030; background: rgba(80,180,60,0.05); }
+.theme-card.done:hover { background: rgba(80,180,60,0.12); border-color: #6dc85a; }
+.theme-card-icon { font-size: 18px; line-height: 1.3; }
+.theme-card-name { color: #ddd; font-weight: 600; font-size: 12px; }
+.theme-card-desc { color: #777; font-size: 10px; }
+.theme-card-meta { color: #555; font-size: 10px; margin-top: 3px; }
+.theme-card.done .theme-card-meta { color: #6dc85a; }
+
 /* Light mode overrides for task bar */
 .light-mode .task-bar { background: #fffbe8; border-bottom-color: #e0cc40; }
 .light-mode .task-bar-header:hover { background: rgba(160,120,0,0.05); }
@@ -314,6 +339,13 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); font-family:
 .light-mode .task-bar-body { border-top-color: #ece4b0; }
 .light-mode .task-desc { color: #444; }
 .light-mode .task-hint-line { color: #6a4e00; background: rgba(160,120,0,0.07); border-color: #c8a800; }
+.light-mode .theme-card { background: rgba(160,120,0,0.04); border-color: #d4c060; }
+.light-mode .theme-card:hover { background: rgba(160,120,0,0.1); border-color: #a88000; }
+.light-mode .theme-card.done { border-color: #5a9a40; background: rgba(60,150,40,0.06); }
+.light-mode .theme-card-name { color: #333; }
+.light-mode .theme-card-desc { color: #888; }
+.light-mode .theme-card-meta { color: #aaa; }
+.light-mode .theme-card.done .theme-card-meta { color: #4a8a30; }
 
 @media (max-width: 900px) {
   .key { min-width: 32px; height: 32px; font-size: 9px; }

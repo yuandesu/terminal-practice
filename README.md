@@ -27,7 +27,9 @@
 - **即時說明提示** — 執行任何指令後，右上角顯示說明浮動卡片
 - **快捷鍵視覺化鍵盤** — 畫面底部顯示實體鍵盤，按下按鍵時對應鍵會高亮
 - **Tips 速查面板** — 點擊右下角 `?` 按鈕，展開橫式速查表，涵蓋終端機快捷鍵與 Vim 按鍵對照
-- **任務模式** — 10 道漸進式練習題，引導初學者從 `ls` 到 Vim 存檔逐步熟悉指令；點擊「💡 提示」才會顯示答案
+- **Pipe 與 Redirect** — 支援 `cmd | cmd`、`> file`、`>> file`，練習真實 shell 常用語法
+- **主題式任務模式** — 5 個主題（檔案導覽、檔案內容、檔案操作、搜尋過濾、Vim 編輯），每個主題 3–5 道練習題；點擊「💡 提示」才顯示答案；完成的主題顯示 ✓ 標記
+- **進度持久化** — 使用者建立的資料夾/檔案與任務進度自動儲存至 `localStorage`，重新整理頁面後仍保留
 - **三語介面** — 支援繁體中文 / English / 日本語 即時切換
 - **亮色 / 暗色主題** — 一鍵切換佈景主題
 - **虛擬檔案系統** — 內建完整目錄結構，可自由瀏覽與編輯檔案
@@ -81,7 +83,9 @@
 - **Simulated zsh terminal** — supports `ls`, `cd`, `cat`, `grep`, `find`, `mkdir`, `touch`, `cp`, `mv`, `rm`, and more
 - **Built-in Vim editor** — Normal / Insert mode switching, `i a A o O` to enter insert, `hjkl` movement, `dd` delete line, `x` delete character, `u` undo, `:wq` `:q!` commands
 - **Instant explanation toasts** — after every command, a floating explanation card appears in the top-right corner
-- **Task Mode** — 10 progressive exercises guiding beginners from `ls` to editing in Vim; click 💡 Hint to reveal the answer only when needed
+- **Pipe & Redirect** — supports `cmd | cmd`, `> file`, `>> file` for practicing real shell patterns
+- **Theme-based Task Mode** — 5 topics (File Navigation, Content, Operations, Search & Filter, Vim); 3–5 exercises each; 💡 Hint reveals the answer on demand; completed themes show a ✓ badge
+- **Progress persistence** — files you create and task progress are saved to `localStorage` and survive page refresh
 - **Visual keyboard** — physical keyboard rendered at the bottom; keys highlight when pressed
 - **Tips quick-reference panel** — click the `?` button in the bottom-right to open a horizontal reference sheet covering terminal shortcuts and Vim keys
 - **Three-language UI** — switch between Traditional Chinese / English / Japanese instantly
@@ -137,7 +141,9 @@ Open the live demo directly — no installation required:
 - **zsh ターミナルのシミュレーション** — `ls`、`cd`、`cat`、`grep`、`find`、`mkdir`、`touch`、`cp`、`mv`、`rm` などをサポート
 - **Vim エディタ内蔵** — Normal / Insert モード切り替え、`i a A o O` で挿入モードへ、`hjkl` 移動、`dd` 行削除、`x` 文字削除、`u` アンドゥ、`:wq` `:q!` コマンド対応
 - **リアルタイム説明トースト** — コマンドを実行するたびに右上に説明カードが表示
-- **タスクモード** — 10 問の段階的な練習問題で `ls` から Vim 保存まで順番に習得；💡 ヒントをクリックすると答えを表示
+- **Pipe と Redirect** — `cmd | cmd`、`> file`、`>> file` に対応。実際の shell で使う頻出パターンを練習できます
+- **テーマ別タスクモード** — 5 テーマ（ファイル操作・内容・管理・検索・Vim）で各 3〜5 問。💡 ヒントをクリックで答えを表示、完了テーマには ✓ が付きます
+- **進捗の保存** — 作成したファイルやタスク進捗を `localStorage` に自動保存。ページ再読み込み後も継続可能
 - **ビジュアルキーボード** — 画面下部にキーボードを表示、押したキーがハイライト
 - **Tips クイックリファレンスパネル** — 右下の `?` ボタンをクリックすると横長の参照シートが展開（ターミナルショートカットと Vim キー一覧）
 - **3言語 UI** — 繁体字中国語 / 英語 / 日本語 を即時切り替え
