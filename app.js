@@ -22,6 +22,14 @@ let rsSaved    = '';
 let currentLang   = 'zh';
 let isLightMode   = false;
 
+// ── Task Mode State ─────────────────────
+let taskMode         = false;
+let taskIdx          = 0;
+let taskPanelOpen    = false;
+let taskHintShown    = false;
+let taskFlags        = {};
+let taskAdvanceTimer = null;
+
 function T() { return TRANSLATIONS[currentLang]; }
 let cmdExplain  = T().cmdExplain;
 let ctrlExplain = T().ctrlExplain;
@@ -216,6 +224,7 @@ function switchLang(lang) {
   addHtmlLine(`<span class="output-line" style="color:#888">${T().separator}</span>`);
   refresh();
   showHint('hint', T().langTitle, T().langText);
+  if (taskMode) renderTaskPanel();
 }
 
 // ── Explanation lookup ─────────────────
@@ -394,10 +403,11 @@ function execCmd(raw) {
     }
   } catch (e) { addOutLine(e.message, 'error-line'); isError = true; }
 
-  if (!isError) {
+  if (!isError && !taskMode) {
     const explain = getExplanation(cmd);
     if (explain) setTimeout(() => showHint('explain', `📖 ${explain.title}`, explain.text), 100);
   }
+  if (taskMode) checkTaskCompletion(cmd);
   refresh();
 }
 
@@ -608,7 +618,7 @@ function viHandleKey(key) {
       v.insertSnapshot = null; v.insertDirty = false;
       v.mode = 'normal'; v.cursorCol = Math.max(0, v.cursorCol - 1);
       document.getElementById('modeBadge').textContent = 'VIM - NORMAL';
-      showHint('explain', T().viEscHint, T().viEscText);
+      if (!taskMode) showHint('explain', T().viEscHint, T().viEscText);
     } else if (key === 'Enter') {
       const l = v.lines[v.cursorRow];
       v.lines[v.cursorRow] = l.substring(0, v.cursorCol);
@@ -687,7 +697,7 @@ function viHandleKey(key) {
       case ':': v.mode='command'; v.commandBuf=''; v.pendingOp=null; break;
       case 'Escape': v.message=''; v.pendingOp=null; break;
     }
-    if (viExpl[key]) showHint('explain', `📖 Vim: ${key}`, viExpl[key]);
+    if (viExpl[key] && !taskMode) showHint('explain', `📖 Vim: ${key}`, viExpl[key]);
   }
   refresh();
 }
@@ -698,16 +708,16 @@ function viExecCommand(cmd) {
     FS[v.path].content = v.lines.join('\n');
     v.message = `"${v.filename}" ${v.lines.length}L written`;
     v.modified = false;
-    if (cmd === 'wq' || cmd === 'x') { showHint('explain', ce[cmd][0], ce[cmd][1]); exitVi(); }
-    else showHint('explain', ce['w'][0], ce['w'][1]);
+    if (cmd === 'wq' || cmd === 'x') { if (!taskMode) showHint('explain', ce[cmd][0], ce[cmd][1]); taskFlags.viSavedAndQuit = true; exitVi(); }
+    else if (!taskMode) showHint('explain', ce['w'][0], ce['w'][1]);
   } else if (cmd === 'q') {
     if (v.modified) v.message = 'E37: No write since last change (add ! to override)';
-    else { showHint('explain', ce['q'][0], ce['q'][1]); exitVi(); }
+    else { if (!taskMode) showHint('explain', ce['q'][0], ce['q'][1]); exitVi(); }
   } else if (cmd === 'q!') {
-    showHint('explain', ce['q!'][0], ce['q!'][1]); exitVi();
+    if (!taskMode) showHint('explain', ce['q!'][0], ce['q!'][1]); exitVi();
   } else if (cmd.match(/^\d+$/)) {
     v.cursorRow = Math.min(parseInt(cmd) - 1, v.lines.length - 1); v.cursorCol = 0;
-    const jmp = T().viLineJump(cmd); showHint('explain', jmp[0], jmp[1]);
+    if (!taskMode) { const jmp = T().viLineJump(cmd); showHint('explain', jmp[0], jmp[1]); }
   } else {
     v.message = `E492: Not an editor command: ${cmd}`;
   }
@@ -717,6 +727,7 @@ function exitVi() {
   viState = null; mode = 'normal';
   document.getElementById('modeBadge').textContent = 'NORMAL';
   document.getElementById('modeBadge').style.color = '#aaa';
+  if (taskMode) checkTaskCompletion(':wq');
   refresh();
 }
 
@@ -729,6 +740,103 @@ function showHint(type, title, text) {
   el.innerHTML = `<div class="hint-title">${title}</div><div>${text}</div>`;
   hintEl.appendChild(el);
   setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 6000);
+}
+
+// ── Task Mode ──────────────────────────
+function toggleTaskMode() {
+  taskMode = !taskMode;
+  document.getElementById('taskModeBtn').classList.toggle('active', taskMode);
+  document.getElementById('taskBar').style.display = taskMode ? 'block' : 'none';
+  if (taskMode) {
+    taskIdx = 0;
+    taskPanelOpen = true;
+    renderTaskPanel();
+    showHint('info', T().tasks.btnLabel, T().tasks.list[0].title);
+  } else {
+    exitTaskMode();
+  }
+}
+
+function exitTaskMode() {
+  taskMode = false;
+  if (taskAdvanceTimer) { clearTimeout(taskAdvanceTimer); taskAdvanceTimer = null; }
+  taskPanelOpen = false;
+  document.getElementById('taskModeBtn').classList.remove('active');
+  document.getElementById('taskBar').style.display = 'none';
+}
+
+function toggleTaskPanel() {
+  taskPanelOpen = !taskPanelOpen;
+  renderTaskPanel();
+}
+
+function renderTaskPanel() {
+  const t = T().tasks;
+  const info = t.list[taskIdx];
+  const task = TASKS[taskIdx];
+  document.getElementById('taskBarLabel').textContent = `${t.panelTitle} ${taskIdx + 1}${t.of}${TASKS.length}`;
+  document.getElementById('taskBarTitle').textContent = info.title;
+  document.getElementById('taskDesc').textContent = info.desc;
+  const hintEl2 = document.getElementById('taskHintLine');
+  hintEl2.textContent = task.hint;
+  hintEl2.style.display = taskHintShown ? 'block' : 'none';
+  document.getElementById('taskBarBody').style.display = taskPanelOpen ? 'block' : 'none';
+  document.getElementById('taskExpandBtn').classList.toggle('open', taskPanelOpen);
+}
+
+function toggleTaskHint(e) {
+  e.stopPropagation();
+  taskHintShown = !taskHintShown;
+  document.getElementById('taskHintLine').style.display = taskHintShown ? 'block' : 'none';
+}
+
+function skipTask(e) {
+  if (e) e.stopPropagation();
+  if (taskAdvanceTimer) { clearTimeout(taskAdvanceTimer); taskAdvanceTimer = null; }
+  if (taskIdx < TASKS.length - 1) { taskIdx++; taskHintShown = false; renderTaskPanel(); }
+  else exitTaskMode();
+}
+
+function prevTask() {
+  if (taskAdvanceTimer) { clearTimeout(taskAdvanceTimer); taskAdvanceTimer = null; }
+  if (taskIdx > 0) { taskIdx--; taskHintShown = false; renderTaskPanel(); }
+}
+
+function checkTaskCompletion(raw) {
+  if (!taskMode || taskAdvanceTimer !== null) return;
+  const task = TASKS[taskIdx];
+  if (!task) return;
+
+  const c = task.check;
+  let passed = false;
+
+  if (c.type === 'cmd_match') {
+    passed = c.pattern.test(raw.trim());
+  } else if (c.type === 'cwd_equals') {
+    passed = cwd === c.path;
+  } else if (c.type === 'fs_new_dir') {
+    const base = FS[c.baseDir];
+    passed = base && base.children.some(name => !c.builtins.includes(name) && FS[`${c.baseDir}/${name}`]?.type === 'dir');
+  } else if (c.type === 'flag') {
+    passed = !!taskFlags[c.flag];
+    if (passed) taskFlags[c.flag] = false;
+  }
+
+  if (!passed) return;
+
+  const t = T().tasks;
+  showHint('success', t.successTitle, t.successText.replace('{n}', taskIdx + 1));
+  taskAdvanceTimer = setTimeout(() => {
+    taskAdvanceTimer = null;
+    if (taskIdx < TASKS.length - 1) {
+      taskIdx++;
+      taskHintShown = false;
+      renderTaskPanel();
+    } else {
+      showHint('success', t.allDoneTitle, t.allDoneText);
+      exitTaskMode();
+    }
+  }, 2500);
 }
 
 // ── Smart Hints ────────────────────────
@@ -811,7 +919,7 @@ document.addEventListener('keydown', (e) => {
       case 'c': inputBuf = ''; cursorPos = 0; addPromptLine('^C'); break;
       case 'l': termLines = []; break;
     }
-    if (ctrlExplain[k]) showHint('explain', `📖 ${ctrlExplain[k].title}`, ctrlExplain[k].text);
+    if (ctrlExplain[k] && !taskMode) showHint('explain', `📖 ${ctrlExplain[k].title}`, ctrlExplain[k].text);
     refresh(); return;
   }
 

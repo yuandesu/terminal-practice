@@ -27,6 +27,7 @@
 - **即時說明提示** — 執行任何指令後，右上角顯示說明浮動卡片
 - **快捷鍵視覺化鍵盤** — 畫面底部顯示實體鍵盤，按下按鍵時對應鍵會高亮
 - **Tips 速查面板** — 點擊右下角 `?` 按鈕，展開橫式速查表，涵蓋終端機快捷鍵與 Vim 按鍵對照
+- **任務模式** — 10 道漸進式練習題，引導初學者從 `ls` 到 Vim 存檔逐步熟悉指令；點擊「💡 提示」才會顯示答案
 - **三語介面** — 支援繁體中文 / English / 日本語 即時切換
 - **亮色 / 暗色主題** — 一鍵切換佈景主題
 - **虛擬檔案系統** — 內建完整目錄結構，可自由瀏覽與編輯檔案
@@ -62,8 +63,9 @@
 
 1. 輸入 `help` 查看所有可用指令
 2. 輸入 `ls` 查看目錄內容
-3. 點擊右下角 `?` 展開快速參考面板
-4. 點擊畫面右上角的語言按鈕切換語言
+3. 點擊右上角 **Tasks / 任務** 按鈕進入任務模式，跟著 10 道引導題練習
+4. 點擊右下角 `?` 展開快速參考面板
+5. 點擊畫面右上角的語言按鈕切換語言
 
 ---
 
@@ -79,6 +81,7 @@
 - **Simulated zsh terminal** — supports `ls`, `cd`, `cat`, `grep`, `find`, `mkdir`, `touch`, `cp`, `mv`, `rm`, and more
 - **Built-in Vim editor** — Normal / Insert mode switching, `i a A o O` to enter insert, `hjkl` movement, `dd` delete line, `x` delete character, `u` undo, `:wq` `:q!` commands
 - **Instant explanation toasts** — after every command, a floating explanation card appears in the top-right corner
+- **Task Mode** — 10 progressive exercises guiding beginners from `ls` to editing in Vim; click 💡 Hint to reveal the answer only when needed
 - **Visual keyboard** — physical keyboard rendered at the bottom; keys highlight when pressed
 - **Tips quick-reference panel** — click the `?` button in the bottom-right to open a horizontal reference sheet covering terminal shortcuts and Vim keys
 - **Three-language UI** — switch between Traditional Chinese / English / Japanese instantly
@@ -116,8 +119,9 @@ Open the live demo directly — no installation required:
 
 1. Type `help` to see all available commands
 2. Type `ls` to list directory contents
-3. Click the `?` button in the bottom-right to open the quick-reference panel
-4. Use the language buttons in the top-right to switch languages
+3. Click **Tasks** in the top-right to enter Task Mode and work through 10 guided exercises
+4. Click the `?` button in the bottom-right to open the quick-reference panel
+5. Use the language buttons in the top-right to switch languages
 
 ---
 
@@ -133,6 +137,7 @@ Open the live demo directly — no installation required:
 - **zsh ターミナルのシミュレーション** — `ls`、`cd`、`cat`、`grep`、`find`、`mkdir`、`touch`、`cp`、`mv`、`rm` などをサポート
 - **Vim エディタ内蔵** — Normal / Insert モード切り替え、`i a A o O` で挿入モードへ、`hjkl` 移動、`dd` 行削除、`x` 文字削除、`u` アンドゥ、`:wq` `:q!` コマンド対応
 - **リアルタイム説明トースト** — コマンドを実行するたびに右上に説明カードが表示
+- **タスクモード** — 10 問の段階的な練習問題で `ls` から Vim 保存まで順番に習得；💡 ヒントをクリックすると答えを表示
 - **ビジュアルキーボード** — 画面下部にキーボードを表示、押したキーがハイライト
 - **Tips クイックリファレンスパネル** — 右下の `?` ボタンをクリックすると横長の参照シートが展開（ターミナルショートカットと Vim キー一覧）
 - **3言語 UI** — 繁体字中国語 / 英語 / 日本語 を即時切り替え
@@ -170,8 +175,9 @@ Open the live demo directly — no installation required:
 
 1. `help` と入力して利用可能なコマンドを確認
 2. `ls` と入力してディレクトリ内容を表示
-3. 右下の `?` ボタンをクリックしてクイックリファレンスパネルを開く
-4. 右上の言語ボタンで言語を切り替える
+3. 右上の **タスク** ボタンをクリックしてタスクモードに入り、10 問の練習問題に挑戦
+4. 右下の `?` ボタンをクリックしてクイックリファレンスパネルを開く
+5. 右上の言語ボタンで言語を切り替える
 
 ---
 

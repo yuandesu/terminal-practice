@@ -255,6 +255,66 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); font-family:
 .light-mode .tips-item:hover .tips-desc { color: #333; }
 .light-mode .tips-close:hover { color: #cc3300; }
 
+/* ── Task Mode ── */
+.task-mode-btn {
+  font-size: 11px; padding: 2px 8px; border-radius: 8px; cursor: pointer; user-select: none;
+  background: var(--vi-status-bg); color: #aaa; border: 1px solid var(--topbar-border);
+  font-family: 'JetBrains Mono', monospace; transition: all .15s;
+}
+.task-mode-btn:hover  { color: #ffbd2e; border-color: #ffbd2e; }
+.task-mode-btn.active { color: #ffbd2e; border-color: #ffbd2e; font-weight: 700; }
+
+.task-bar {
+  flex-shrink: 0;
+  background: #161408;
+  border-bottom: 1px solid #3a3410;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+}
+.task-bar-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 14px; cursor: pointer; user-select: none;
+  transition: background .12s;
+}
+.task-bar-header:hover { background: rgba(255,189,46,0.05); }
+.task-bar-label {
+  flex-shrink: 0; font-size: 10px; font-weight: 700; letter-spacing: .5px;
+  color: #ffbd2e; background: rgba(255,189,46,0.1); border: 1px solid #554a10;
+  border-radius: 4px; padding: 1px 7px;
+}
+.task-bar-title { flex: 1; color: #ccc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.task-bar-controls { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.task-expand-btn { color: #555; font-size: 10px; transition: transform .15s; }
+.task-expand-btn.open { transform: rotate(180deg); }
+.task-nav-btn {
+  color: #777; cursor: pointer; padding: 2px 6px; border-radius: 4px;
+  border: 1px solid transparent; transition: all .12s; font-size: 11px;
+}
+.task-nav-btn:hover { color: #ffbd2e; border-color: #554a10; }
+
+.task-bar-body { padding: 0 14px 10px; border-top: 1px solid #2a2408; }
+.task-desc {
+  color: #bbb; line-height: 1.7; padding: 8px 0 6px;
+  white-space: pre-wrap;
+}
+.task-hint-line {
+  font-size: 11px; color: #ffbd2e; background: rgba(255,189,46,0.07);
+  border: 1px solid #443c0e; border-radius: 4px;
+  padding: 5px 10px; margin-top: 6px; margin-bottom: 2px; font-weight: 600;
+}
+.task-footer { display: flex; gap: 8px; justify-content: flex-end; }
+
+/* Light mode overrides for task bar */
+.light-mode .task-bar { background: #fffbe8; border-bottom-color: #e0cc40; }
+.light-mode .task-bar-header:hover { background: rgba(160,120,0,0.05); }
+.light-mode .task-bar-label { color: #7a5c00; background: rgba(160,120,0,0.1); border-color: #c8a800; }
+.light-mode .task-bar-title { color: #333; }
+.light-mode .task-expand-btn { color: #aaa; }
+.light-mode .task-nav-btn:hover { color: #7a5c00; border-color: #c8a800; }
+.light-mode .task-bar-body { border-top-color: #ece4b0; }
+.light-mode .task-desc { color: #444; }
+.light-mode .task-hint-line { color: #6a4e00; background: rgba(160,120,0,0.07); border-color: #c8a800; }
+
 @media (max-width: 900px) {
   .key { min-width: 32px; height: 32px; font-size: 9px; }
   .key .sub { font-size: 7px; }

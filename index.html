@@ -21,8 +21,28 @@
         <div class="lang-btn active" data-lang="zh" onclick="switchLang('zh')">中</div>
         <div class="lang-btn"        data-lang="en" onclick="switchLang('en')">EN</div>
         <div class="lang-btn"        data-lang="ja" onclick="switchLang('ja')">日</div>
+        <div class="task-mode-btn" id="taskModeBtn" onclick="toggleTaskMode()">Tasks</div>
         <div class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle theme">🌙</div>
         <div class="mode-badge" id="modeBadge">NORMAL</div>
+      </div>
+    </div>
+    <div class="task-bar" id="taskBar" style="display:none">
+      <div class="task-bar-header" onclick="toggleTaskPanel()">
+        <span class="task-bar-label" id="taskBarLabel"></span>
+        <span class="task-bar-title" id="taskBarTitle"></span>
+        <div class="task-bar-controls">
+          <span class="task-nav-btn" onclick="skipTask(event)">⏭</span>
+          <span class="task-expand-btn" id="taskExpandBtn">▼</span>
+        </div>
+      </div>
+      <div class="task-bar-body" id="taskBarBody" style="display:none">
+        <div class="task-desc" id="taskDesc"></div>
+        <div class="task-footer">
+          <span class="task-nav-btn" onclick="toggleTaskHint(event)">💡 Hint</span>
+          <span class="task-nav-btn" onclick="prevTask()">← Prev</span>
+          <span class="task-nav-btn" onclick="skipTask(null)">Skip →</span>
+        </div>
+        <div class="task-hint-line" id="taskHintLine" style="display:none"></div>
       </div>
     </div>
     <div class="terminal-wrap">
@@ -43,12 +63,13 @@
 
   <!-- Tips button: fixed, always visible -->
   <button class="tips-btn" id="tipsBtn" onclick="toggleTips()">?</button>
-  <!-- Load order matters: data → translations → app logic -->
+  <!-- Load order matters: data → translations → tasks → app logic -->
   <script src="vfs/files.js"></script>
   <script src="filesystem.js"></script>
   <script src="lang/zh.js"></script>
   <script src="lang/en.js"></script>
   <script src="lang/ja.js"></script>
+  <script src="tasks.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

@@ -5,6 +5,22 @@ Format: `[version] YYYY-MM-DD — description`
 
 ---
 
+## [1.4.0] 2026-03-26 — Task Mode
+
+### Added
+- **Task Mode** — structured learning mode with 10 progressive exercises, toggled via a new "Tasks" button in the top bar
+  - Tasks guide beginners from basic directory listing (`ls`, `pwd`) through file reading, search, creation, copy, and Vim editing
+  - Collapsible task panel shows current task title and description; expands to reveal full description and controls
+  - **💡 Hint button** — answer (e.g. `ls -la`) is hidden by default; revealed only on request so users try on their own first
+  - Auto-advances to the next task 2.5 seconds after success, with a ✓ toast notification
+  - Prev / Skip navigation to move between tasks freely
+  - "All done" toast + auto-exit after completing all 10 tasks
+- Task panel fully i18n'd across Traditional Chinese, English, and Japanese
+- In Task Mode, command-explanation toasts are suppressed so only task-completion feedback is shown
+- Amber (`#ffbd2e`) accent colour for task UI, distinct from the green terminal theme; full light-mode overrides included
+
+---
+
 ## [1.3.0] 2026-03-25 — Tips panel
 
 ### Added
